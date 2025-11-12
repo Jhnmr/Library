@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# Database
+database/*.db
+database/*.db-journal
+
+# Storage
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/temp/*
+!storage/temp/.gitkeep
+
+# Logs
+logs/*.log
+logs/*.txt
+!logs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

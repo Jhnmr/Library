@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca Virtual - Sistema de Archivos</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="loginScreen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <i class="fas fa-book-open"></i>
+                <h1>Biblioteca Virtual</h1>
+                <p>Sistema de Gestión de Archivos</p>
+            </div>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i>
+                        Usuario
+                    </label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i>
+                        Contraseña
+                    </label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Iniciar Sesión
+                </button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Aplicación Principal -->
+    <div id="mainApp" class="app-container" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-book-open"></i>
+                <h2>Biblioteca Virtual</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="files">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a href="#" class="nav-item" data-view="folders">
+                    <i class="fas fa-folder"></i>
+                    <span>Carpetas</span>
+                </a>
+                <a href="#" class="nav-item" data-view="duplicates">
+                    <i class="fas fa-copy"></i>
+                    <span>Duplicados</span>
+                </a>
+                <a href="#" class="nav-item" data-view="stats">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Estadísticas</span>
+                </a>
+                <a href="#" class="nav-item" data-view="users" id="usersNav" style="display: none;">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a href="#" class="nav-item" data-view="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuración</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="user-details">
+                        <span class="user-name" id="currentUserName">Usuario</span>
+                        <span class="user-role" id="currentUserRole">user</span>
+                    </div>
+                </div>
+                <button class="btn btn-logout" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <div class="breadcrumb" id="breadcrumb">
+                        <a href="#" data-folder="null">Inicio</a>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar archivos...">
+                    </div>
+                    <div class="server-status online">
+                        <i class="fas fa-circle"></i>
+                        <span>Conectado</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Vista de Archivos -->
+            <div id="filesView" class="content-view active">
+                <div class="view-header">
+                    <h2>Archivos</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-secondary" id="createFolderBtn">
+                            <i class="fas fa-folder-plus"></i>
+                            Nueva Carpeta
+                        </button>
+                        <button class="btn btn-primary" id="uploadFileBtn">
+                            <i class="fas fa-upload"></i>
+                            Subir Archivo
+                        </button>
+                        <input type="file" id="fileInput" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="filters">
+                    <select id="filterType" class="filter-select">
+                        <option value="">Todos los tipos</option>
+                        <option value="image">Imágenes</option>
+                        <option value="video">Videos</option>
+                        <option value="audio">Audio</option>
+                        <option value="application">Documentos</option>
+                        <option value="text">Texto</option>
+                    </select>
+                    <select id="sortBy" class="filter-select">
+                        <option value="created_at">Fecha</option>
+                        <option value="original_name">Nombre</option>
+                        <option value="file_size">Tamaño</option>
+                        <option value="mime_type">Tipo</option>
+                    </select>
+                    <select id="sortOrder" class="filter-select">
+                        <option value="DESC">Descendente</option>
+                        <option value="ASC">Ascendente</option>
+                    </select>
+                </div>
+
+                <div id="foldersContainer" class="folders-grid"></div>
+                <div id="filesContainer" class="files-grid"></div>
+                <div id="loadingSpinner" class="loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Cargando...
+                </div>
+            </div>
+
+            <!-- Vista de Carpetas -->
+            <div id="foldersView" class="content-view">
+                <div class="view-header">
+                    <h2>Carpetas</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="createFolderBtn2">
+                            <i class="fas fa-folder-plus"></i>
+                            Nueva Carpeta
+                        </button>
+                    </div>
+                </div>
+                <div id="foldersList" class="folders-list"></div>
+            </div>
+
+            <!-- Vista de Duplicados -->
+            <div id="duplicatesView" class="content-view">
+                <div class="view-header">
+                    <h2>Archivos Duplicados</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-secondary" id="scanDuplicatesBtn">
+                            <i class="fas fa-sync"></i>
+                            Escanear
+                        </button>
+                    </div>
+                </div>
+                <div id="duplicatesSummary" class="stats-summary"></div>
+                <div id="duplicatesContainer" class="duplicates-container"></div>
+            </div>
+
+            <!-- Vista de Estadísticas -->
+            <div id="statsView" class="content-view">
+                <div class="view-header">
+                    <h2>Estadísticas</h2>
+                </div>
+                <div id="statsContainer" class="stats-container">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statTotalFiles">0</h3>
+                                <p>Total de Archivos</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statTotalFolders">0</h3>
+                                <p>Total de Carpetas</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-hdd"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statTotalSize">0 MB</h3>
+                                <p>Espacio Usado</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="statTotalUsers">0</h3>
+                                <p>Usuarios</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Archivos por Tipo</h3>
+                        <div id="filesByTypeChart" class="chart"></div>
+                    </div>
+                    <div class="recent-files">
+                        <h3>Archivos Recientes</h3>
+                        <div id="recentFilesList" class="list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vista de Usuarios (Solo Admin) -->
+            <div id="usersView" class="content-view">
+                <div class="view-header">
+                    <h2>Gestión de Usuarios</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="createUserBtn">
+                            <i class="fas fa-user-plus"></i>
+                            Nuevo Usuario
+                        </button>
+                    </div>
+                </div>
+                <div id="usersContainer" class="users-container"></div>
+            </div>
+
+            <!-- Vista de Configuración -->
+            <div id="settingsView" class="content-view">
+                <div class="view-header">
+                    <h2>Configuración</h2>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3>Información del Servidor</h3>
+                        <div id="serverInfo" class="info-grid"></div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Cambiar Contraseña</h3>
+                        <form id="changePasswordForm" class="settings-form">
+                            <div class="form-group">
+                                <label>Contraseña Actual</label>
+                                <input type="password" id="currentPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nueva Contraseña</label>
+                                <input type="password" id="newPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Confirmar Nueva Contraseña</label>
+                                <input type="password" id="confirmPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Guardar Cambios
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Preview -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="previewFileName">Archivo</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="downloadFromPreview">
+                    <i class="fas fa-download"></i>
+                    Descargar
+                </button>
+                <button class="btn btn-danger" id="deleteFromPreview">
+                    <i class="fas fa-trash"></i>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Genérico -->
+    <div id="genericModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modal</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+
+    <!-- Toast de Notificaciones -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/files.js"></script>
+    <script src="js/folders.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/duplicates.js"></script>
+    <script src="js/users.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
